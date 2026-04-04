@@ -13,17 +13,17 @@ class LikeController extends Controller
         try {
             $userId = Auth::id();
 
-            $alreadyLiked = $post->likedByUsers()->where('user_id', $userId)->exists();
+            $alreadyLiked = $post->likes()->where('user_id', $userId)->exists();
 
             if($alreadyLiked){
-                $post->likedByUsers()->detach($userId);
+                $post->likes()->detach($userId);
                 $liked = false;
             } else{
-                $post->likedByUsers()->attach($userId);
+                $post->likes()->attach($userId);
                 $liked = true;
             }
 
-            $totalLike = $post->likedByUsers()->count();
+            $totalLike = $post->likes()->count();
 
             return response()->json([
                 'success' => true,

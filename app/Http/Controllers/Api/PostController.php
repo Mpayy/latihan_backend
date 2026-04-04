@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Post;
-use App\Policies\PostPolicy;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -19,9 +18,9 @@ class PostController extends Controller
     public function index()
     {
         $posts = Post::with('user:id,name,username,profile_photo')
-        ->withCount('likedByUsers as likes_count')
-        ->withExists(['likedByUsers as is_liked' => function($query) {
-            $query->where('likes.user_id', auth('sanctum')->id() ?? 0);
+        ->withCount(['likes','comments'])
+        ->withExists(['likes as is_liked' => function($query) {
+            $query->where('likes.user_id', Auth::id());
         }])
         ->latest()->paginate(10);
 
@@ -74,7 +73,15 @@ class PostController extends Controller
     public function show(Post $post)
     {
         try {
-            $post->load('user:id,name');
+            $post->load([
+                'user:id,name,username,profile_photo',
+                'comments.user:id,name,username,profile_photo'
+            ])
+            ->loadCount(['likes','comments'])
+            ->loadExists(['likes as is_liked' => function($query) {
+                $query->where('likes.user_id', Auth::id());
+            }]);
+            // ->findOrFail($post->id);
 
             return ResponseHelper::success($post,'Detail Post',200);
         } catch (\Throwable $th) {
@@ -88,7 +95,9 @@ class PostController extends Controller
     public function update(Request $request, Post $post)
     {
         try {
-            $this->authorize('update', $post);
+            if($post->user_id != Auth::id()){
+                return ResponseHelper::error('Unauthorized', 'You are not authorized to update this post', 403);
+            }
 
             $validator = Validator::make($request->all(), [
                 'caption' => 'nullable|string|max:1000',
@@ -127,7 +136,9 @@ class PostController extends Controller
     public function destroy(Post $post)
     {
         try {
-            $this->authorize('delete', $post);
+            if($post->user_id != Auth::id()){
+                return ResponseHelper::error('Unauthorized', 'You are not authorized to delete this post', 403);
+            }
 
             if($post->image){
                 Storage::disk('public')->delete($post->image);
