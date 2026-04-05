@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Helpers\ResponseHelper;
+use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
@@ -17,7 +18,7 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users = User::all();
+        $users = User::paginate(10);
 
         return ResponseHelper::success($users, 'Berhasil get user');
     }
@@ -28,7 +29,7 @@ class UserController extends Controller
     public function store(Request $request)
     {
         try {
-            $validator = Validator::make($request->all(), [
+            $validator = Validator::make($request->only('name', 'email', 'password'), [
                 'name' => 'required|string',
                 'email' => 'required|email|unique:users,email',
                 'password' => 'required|min:8'
@@ -67,7 +68,11 @@ class UserController extends Controller
     public function update(Request $request, string $id)
     {
         try {
-            $validator = Validator::make($request->all(), [
+            if(Auth::id() != $id){
+                return ResponseHelper::error('Anda tidak memiliki akses untuk mengupdate data ini', '', 403);
+            }
+
+            $validator = Validator::make($request->only('name', 'email', 'password'), [
                 'name' => 'required|string',
                 'email' => 'required|email|unique:users,email,' . $id,
                 'password' => 'nullable|min:8'

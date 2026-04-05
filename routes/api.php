@@ -2,12 +2,16 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CommentController;
+use App\Http\Controllers\Api\FeedController;
 use App\Http\Controllers\Api\FollowController;
 use App\Http\Controllers\Api\LikeController;
 use App\Http\Controllers\Api\PostController;
+use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+
+
 
 
 
@@ -31,6 +35,7 @@ Route::post('login', [AuthController::class, 'login']);
 // Route::get('posts/{post}', [PostController::class,'show']);
 
 Route::middleware('auth:sanctum')->group(function(){
+    Route::post('logout', [AuthController::class, 'logout']);
     Route::apiResource('users', UserController::class);
     Route::apiResource('posts', PostController::class); //->except('index', 'show');
     Route::post('posts/{post}/likes', [LikeController::class, 'toggleLike']);
@@ -41,4 +46,7 @@ Route::middleware('auth:sanctum')->group(function(){
     Route::post('users/{user}/follows', [FollowController::class, 'toggleFollow']);
     Route::get('users/{user}/followers', [FollowController::class, 'getFollowers']);
     Route::get('users/{user}/following', [FollowController::class, 'getFollowing']);
+    Route::get('profile', [ProfileController::class, 'getProfile']);
+    Route::put('profile', [ProfileController::class, 'updateProfile']);
+    Route::get('feeds', [FeedController::class, 'index']);
 });

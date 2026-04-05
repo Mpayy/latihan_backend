@@ -16,7 +16,7 @@ class AuthController extends Controller
         // Langkah 2: Siapkan Jaring Pengaman (Try-Catch)
         try {
             // Langkah 3: Siapkan "Satpam Pintu Depan" (Validator) di dalam try
-            $validator = Validator::make($request->all(), [
+            $validator = Validator::make($request->only('name', 'username', 'email', 'password', 'bio', 'profile_photo'), [
                 'name' => 'required|string',
                 'username' => 'required|string|unique:users,username',
                 'email' => 'required|email|unique:users,email',
@@ -53,7 +53,7 @@ class AuthController extends Controller
         // Langkah 1: Siapkan Fungsinya & Jaring Pengaman
         try {
             // Langkah 2: Satpam Penjaga Pintu Masuk (Validator)
-            $validator = Validator::make($request->all(), [
+            $validator = Validator::make($request->only('email', 'password'), [
                 'email' => 'required|email',
                 'password' => 'required|min:8'
             ]);
@@ -84,5 +84,16 @@ class AuthController extends Controller
         } catch (\Throwable $th) {
             return ResponseHelper::error('Internal Server Error!!', $th->getMessage(), 500);
         }
+    }
+
+    public function logout(Request $request)
+    {
+        $token = $request->user()->currentAccessToken();
+        $token->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Logout berhasil'
+        ]);
     }
 }
