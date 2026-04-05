@@ -2,11 +2,13 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CommentController;
+use App\Http\Controllers\Api\FollowController;
 use App\Http\Controllers\Api\LikeController;
 use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+
 
 
 
@@ -36,4 +38,7 @@ Route::middleware('auth:sanctum')->group(function(){
     Route::get('posts/{post}/comments', [CommentController::class, 'indexByPost']);
     Route::put('comments/{comment}', [CommentController::class, 'update']);
     Route::delete('comments/{comment}', [CommentController::class, 'destroy']);
+    Route::post('users/{user}/follows', [FollowController::class, 'toggleFollow']);
+    Route::get('users/{user}/followers', [FollowController::class, 'getFollowers']);
+    Route::get('users/{user}/following', [FollowController::class, 'getFollowing']);
 });
