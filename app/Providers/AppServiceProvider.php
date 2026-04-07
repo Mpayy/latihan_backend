@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Gate;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,6 +20,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Gate::before(function ($user, $ability) {
+            // Mengizinkan admin melakukan apa saja
+            if (isset($user->is_admin) && $user->is_admin) {
+                return true;
+            }
+            return null; // Lanjut ke Policy reguler
+        });
     }
 }

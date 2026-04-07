@@ -39,9 +39,11 @@ class FollowController extends Controller
                 $followed = true;
             }
 
-            return ResponseHelper::success([
+            $data = [
                 'followed' => $followed
-            ], $followed ? 'Followed Successfully' : 'Unfollowed Successfully', 200);
+            ];
+
+            return ResponseHelper::success($data, $followed ? 'Followed Successfully' : 'Unfollowed Successfully', 200);
             
         } catch (\Throwable $th) {
             return ResponseHelper::error('Internal Server Error!!', $th->getMessage(), 500);
@@ -55,7 +57,7 @@ class FollowController extends Controller
             ->select('users.id', 'name', 'username', 'bio', 'profile_photo')
             ->paginate(10);
             
-            return ResponseHelper::success($followers, 'Daftar Followers', 200);
+            return ResponseHelper::success($followers, 'Followers List', 200);
         } catch (\Throwable $th) {
             return ResponseHelper::error('Internal Server Error!!', $th->getMessage(), 500);
         }
@@ -68,7 +70,7 @@ class FollowController extends Controller
             ->select('users.id', 'name', 'username', 'bio', 'profile_photo')
             ->paginate(10);
 
-            return ResponseHelper::success($following, 'Daftar Following', 200);
+            return ResponseHelper::success($following, 'Following List', 200);
         } catch (\Throwable $th) {
             return ResponseHelper::error('Internal Server Error!!', $th->getMessage(), 500);
         }

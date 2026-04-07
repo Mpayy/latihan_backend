@@ -15,19 +15,40 @@ class CommentController extends Controller
     public function store(Request $request, Post $post)
     {
         try {
-            $validator = Validator::make($request->only('body'), [
-                'body' => 'required|string|max:1000'
+            $validator = Validator::make($request->only('body','image','file'), [
+                'body' => 'required|string|max:1000',
+                'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+                'file' => 'nullable|file|mimes:pdf|max:2048',
             ]);
+
+            $validator->after(function ($validator) use($request){
+                if(!$request->filled('body') && !$request->hasFile('image') && !$request->hasFile('file')){
+                    $validator->errors()->add('comment','Body or Image or File must be filled in');
+                }
+            });
 
             if($validator->fails()){
                 return ResponseHelper::error('Validation Error', $validator->errors(), 422);
             }
 
             $data = [
-                'body' => $request->body,
                 'user_id' => Auth::id(),
                 'post_id' => $post->id
             ];
+
+            if($request->filled('body')){
+                $data['body'] = $request->body;
+            }
+
+            if($request->hasFile('image')){
+                $path = $request->file('image')->store('comments/images','public');
+                $data['image'] = $path;
+            }
+
+            if($request->hasFile('file')){
+                $path = $request->file('file')->store('comments/files','public');
+                $data['file'] = $path;
+            }
 
             $comment = Comment::create($data);
             $comment->load('user:id,name,username,profile_photo');
@@ -41,8 +62,8 @@ class CommentController extends Controller
     public function update(Request $request, Comment $comment)
     {
         try {
-            if($comment->user_id != Auth::id()){
-                return ResponseHelper::error('Unauthorized', 'You are not authorized to delete this comment', 403);
+            if(Auth::user()->cannot('update', $comment)){
+                return ResponseHelper::error('Unauthorized', 'You are not authorized to update this comment', 403);
             }
 
             $validator = Validator::make($request->only('body'), [
@@ -78,7 +99,7 @@ class CommentController extends Controller
     public function destroy(Comment $comment)
     {
         try {
-            if($comment->user_id != Auth::id()){
+            if(Auth::user()->cannot('delete', $comment)){
                 return ResponseHelper::error('Unauthorized', 'You are not authorized to delete this comment', 403);
             }
 

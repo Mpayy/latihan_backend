@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Helpers\ResponseHelper;
+use App\Models\Post;
 use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
@@ -20,7 +21,7 @@ class UserController extends Controller
     {
         $users = User::paginate(10);
 
-        return ResponseHelper::success($users, 'Berhasil get user');
+        return ResponseHelper::success($users, 'Get User Success');
     }
 
     /**
@@ -29,8 +30,12 @@ class UserController extends Controller
     public function store(Request $request)
     {
         try {
-            $validator = Validator::make($request->only('name', 'email', 'password'), [
+            if(Auth::user()->cannot('create', User::class)){
+                return ResponseHelper::error('You do not have access to create this data.', '', 403);
+            }
+            $validator = Validator::make($request->only('name','username', 'email', 'password'), [
                 'name' => 'required|string',
+                'username' => 'required|string|unique:users,username',
                 'email' => 'required|email|unique:users,email',
                 'password' => 'required|min:8'
             ]);
@@ -41,6 +46,7 @@ class UserController extends Controller
 
             $user = User::create([
                 'name' => $request->name,
+                'username' => $request->username,
                 'email' => $request->email,
                 'password' => $request->password
             ]);
@@ -59,7 +65,19 @@ class UserController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $user = User::findOrFail($id);
+
+        $post = Post::with('user:id,name,username,profile_photo')
+        ->where('user_id', $user->id)
+        ->latest()
+        ->paginate(10);
+
+        $data = [
+            'user' => $user,
+            'post' => $post
+        ];
+
+        return ResponseHelper::success($data, 'Get User Post Success');
     }
 
     /**
@@ -68,8 +86,10 @@ class UserController extends Controller
     public function update(Request $request, string $id)
     {
         try {
-            if(Auth::id() != $id){
-                return ResponseHelper::error('Anda tidak memiliki akses untuk mengupdate data ini', '', 403);
+            $user = User::findOrFail($id);
+
+            if(Auth::user()->cannot('update', $user)){
+                return ResponseHelper::error('You do not have access to update this data.', '', 403);
             }
 
             $validator = Validator::make($request->only('name', 'email', 'password'), [
@@ -79,10 +99,8 @@ class UserController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ResponseHelper::error('Validasi Error', '', 422);
+                return ResponseHelper::error('Validasi Error', $validator->errors(), 422);
             }
-
-            $user = User::findOrFail($id);
 
             $data = $request->only('name', 'email');
 
@@ -108,6 +126,10 @@ class UserController extends Controller
     {
         try {
             $user = User::findOrFail($id);
+
+            if(Auth::user()->cannot('delete', $user)){
+                return ResponseHelper::error('You do not have access to delete this data.', '', 403);
+            }
 
             $user->delete();
 

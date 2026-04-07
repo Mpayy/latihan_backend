@@ -26,6 +26,7 @@ class User extends Authenticatable
         'password',
         'bio',
         'profile_photo',
+        'is_admin',
     ];
 
     /**
@@ -48,7 +49,13 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_admin' => 'boolean',
         ];
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->is_admin;
     }
 
     public function posts()

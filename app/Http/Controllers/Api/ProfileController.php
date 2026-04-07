@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use App\Models\User;
+use App\Helpers\ResponseHelper;
 
 
 class ProfileController extends Controller
@@ -16,11 +17,7 @@ class ProfileController extends Controller
     {
         $user = Auth::user()->loadCount('posts','followers','following');
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Profile berhasil diambil',
-            'data' => $user
-        ]);
+        return ResponseHelper::success($user, 'Profile successfully retrieved', 200);
     }
 
     public function updateProfile(Request $request)
@@ -35,11 +32,7 @@ class ProfileController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation Error',
-                'data' => $validator->errors()
-            ], 422);
+            return ResponseHelper::error('Validation Error', $validator->errors(), 422);
         }
 
         $data = $request->only([
@@ -58,10 +51,6 @@ class ProfileController extends Controller
 
         $user->update($data);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Profile berhasil diupdate',
-            'data' => $user
-        ]);
+        return ResponseHelper::success($user->fresh(), 'Profile successfully updated', 200);
     }
 }

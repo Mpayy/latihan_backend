@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Follow;
 use App\Models\Post;
 use Illuminate\Support\Facades\Auth;
+use App\Helpers\ResponseHelper;
 
 class FeedController extends Controller
 {
@@ -25,15 +26,9 @@ class FeedController extends Controller
             ->latest()
             ->paginate(10);
 
-            return response()->json([
-                'message' => 'Feed fetched successfully',
-                'data' => $posts
-            ], 200);
+            return ResponseHelper::success($posts, 'Feed fetched successfully', 200);
         } catch (\Throwable $th) {
-            return response()->json([
-                'message' => 'Failed to fetch feed',
-                'error' => $th->getMessage()
-            ], 500);
+            return ResponseHelper::error('Internal Server Error!!', $th->getMessage(), 500);
         }
     }
 }

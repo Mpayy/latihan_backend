@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Post;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Helpers\ResponseHelper;
 
 class LikeController extends Controller
 {
@@ -25,18 +26,15 @@ class LikeController extends Controller
 
             $totalLike = $post->likes()->count();
 
-            return response()->json([
-                'success' => true,
+            $data = [
                 'liked' => $liked,
                 'total_like' => $totalLike,
-                'message' => $liked ? 'Post liked successfully' : 'Post unliked successfully',
-            ]);
+            ];
+
+            return ResponseHelper::success($data, $liked ? 'Post liked successfully' : 'Post unliked successfully');
 
         } catch (\Throwable $th) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to toggle like',
-            ], 500);
+            return ResponseHelper::error('Failed to toggle like', $th->getMessage(), 500);
         }
     }
     

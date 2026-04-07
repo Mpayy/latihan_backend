@@ -15,16 +15,22 @@ class PostController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         $posts = Post::with('user:id,name,username,profile_photo')
         ->withCount(['likes','comments'])
         ->withExists(['likes as is_liked' => function($query) {
-            $query->where('likes.user_id', Auth::id());
+            if(Auth::check()){
+                $query->where('likes.user_id', Auth::id());
+            }
         }])
-        ->latest()->paginate(10);
+        ->latest()
+        ->when($request->filled('hashtag'), function ($query) use ($request) {
+            $query->where('caption', 'like', '%#'.$request->hashtag.'%');
+        })
+        ->paginate(10);
 
-        return ResponseHelper::success($posts,'Data berhasil diambil',200);
+        return ResponseHelper::success($posts,'Get Post Success',200);
     }
 
     /**
@@ -33,14 +39,15 @@ class PostController extends Controller
     public function store(Request $request)
     {
         try {
-            $validator = Validator::make($request->all(), [
-                'caption' => 'nullable|string|max:1000',
-                'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048'
+            $validator = Validator::make($request->only('caption', 'image','file'), [
+                'caption' => 'nullable|string|max:250',
+                'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+                'file' => 'nullable|file|mimes:pdf|max:2048'
             ]);
 
             $validator->after(function ($validator) use($request){
-                if(!$request->filled('caption') && !$request->hasFile('image')){
-                    $validator->errors()->add('post','Caption atau Image harus diisi');
+                if(!$request->filled('caption') && !$request->hasFile('image') && !$request->hasFile('file')){
+                    $validator->errors()->add('post','Caption or Image or File must be filled in');
                 }
             });
 
@@ -49,10 +56,16 @@ class PostController extends Controller
             }
 
             $data = $request->only('caption');
+            $basePath = 'posts';
 
             if($request->hasFile('image')){
-               $path = $request->file('image')->store('posts','public');
+               $path = $request->file('image')->store($basePath.'/images','public');
                $data['image'] = $path;
+            }
+
+            if($request->hasFile('file')){
+               $path = $request->file('file')->store($basePath.'/files','public');
+               $data['file'] = $path;
             }
 
             $data['user_id'] = Auth::id();
@@ -73,6 +86,8 @@ class PostController extends Controller
     public function show(Post $post)
     {
         try {
+            // note: kalau post tidak ketemu, belum ada respon
+
             $post->load([
                 'user:id,name,username,profile_photo',
                 'comments.user:id,name,username,profile_photo'
@@ -95,20 +110,28 @@ class PostController extends Controller
     public function update(Request $request, Post $post)
     {
         try {
-            if($post->user_id != Auth::id()){
+            if(Auth::user()->cannot('update', $post)){
                 return ResponseHelper::error('Unauthorized', 'You are not authorized to update this post', 403);
             }
 
-            $validator = Validator::make($request->all(), [
-                'caption' => 'nullable|string|max:1000',
-                'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048'
+            $validator = Validator::make($request->only('caption', 'image', 'file'), [
+                'caption' => 'nullable|string|max:250',
+                'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+                'file' => 'nullable|file|mimes:pdf|max:2048',
             ]);
+
+            $validator->after(function ($validator) use($request){
+                if(!$request->filled('caption') && !$request->hasFile('image') && !$request->hasFile('file')){
+                    $validator->errors()->add('post','Caption or Image or File must be filled in');
+                }
+            });
 
             if($validator->fails()){
                 return ResponseHelper::error('Validation Error', $validator->errors(), 422);
             }
 
             $data = [];
+            $basePath = 'posts';
 
             if($request->filled('caption')){
                 $data['caption'] = $request->caption;
@@ -119,8 +142,17 @@ class PostController extends Controller
                     Storage::disk('public')->delete($post->image);
                 }
 
-                $path = $request->file('image')->store('posts','public');
+                $path = $request->file('image')->store($basePath.'/images','public');
                 $data['image'] = $path;
+            }
+
+            if($request->hasFile('file')){
+                if($post->file){
+                    Storage::disk('public')->delete($post->file);
+                }
+
+                $path = $request->file('file')->store($basePath.'/files','public');
+                $data['file'] = $path;
             }
 
             $post->update($data);
@@ -136,12 +168,16 @@ class PostController extends Controller
     public function destroy(Post $post)
     {
         try {
-            if($post->user_id != Auth::id()){
+            if(Auth::user()->cannot('delete', $post)){
                 return ResponseHelper::error('Unauthorized', 'You are not authorized to delete this post', 403);
             }
 
             if($post->image){
                 Storage::disk('public')->delete($post->image);
+            }
+
+            if($post->file){
+                Storage::disk('public')->delete($post->file);
             }
 
             $post->delete();
