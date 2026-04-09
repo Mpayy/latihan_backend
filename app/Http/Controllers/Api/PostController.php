@@ -42,7 +42,7 @@ class PostController extends Controller
             $validator = Validator::make($request->only('caption', 'image','file'), [
                 'caption' => 'nullable|string|max:250',
                 'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-                'file' => 'nullable|file|mimes:pdf|max:2048'
+                'file' => 'nullable|file|mimes:jpg,jpeg,png,webp,gif,mp4,mov,pdf|max:2048'
             ]);
 
             $validator->after(function ($validator) use($request){
@@ -117,7 +117,7 @@ class PostController extends Controller
             $validator = Validator::make($request->only('caption', 'image', 'file'), [
                 'caption' => 'nullable|string|max:250',
                 'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-                'file' => 'nullable|file|mimes:pdf|max:2048',
+                'file' => 'nullable|file|mimes:jpg,jpeg,png,webp,gif,mp4,mov,pdf|max:2048',
             ]);
 
             $validator->after(function ($validator) use($request){

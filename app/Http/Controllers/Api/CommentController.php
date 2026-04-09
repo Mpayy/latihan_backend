@@ -8,6 +8,7 @@ use App\Models\Comment;
 use App\Models\Post;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 class CommentController extends Controller
@@ -16,9 +17,9 @@ class CommentController extends Controller
     {
         try {
             $validator = Validator::make($request->only('body','image','file'), [
-                'body' => 'required|string|max:1000',
+                'body' => 'nullable|string|max:1000',
                 'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-                'file' => 'nullable|file|mimes:pdf|max:2048',
+                'file' => 'nullable|file|mimes:jpg,jpeg,png,webp,gif,mp4,mov,pdf|max:2048',
             ]);
 
             $validator->after(function ($validator) use($request){
@@ -67,14 +68,47 @@ class CommentController extends Controller
             }
 
             $validator = Validator::make($request->only('body'), [
-                'body' => 'required|string|max:1000'
+                'body' => 'nullable|string|max:1000',
+                'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+                'file' => 'nullable|file|mimes:jpg,jpeg,png,webp,gif,mp4,mov,pdf|max:2048',
             ]);
+
+            $validator->after(function ($validator) use($request){
+                if(!$request->filled('body') && !$request->hasFile('image') && !$request->hasFile('file')){
+                    $validator->errors()->add('comment','Body or Image or File must be filled in');
+                }
+            });
 
             if($validator->fails()){
                 return ResponseHelper::error('Validation Error', $validator->errors(), 422);
             }
 
-            $comment->update($request->only('body'));
+            $data = [];
+            $basePath = 'comments';
+
+            if($request->filled('body')){
+                $data['body'] = $request->body;
+            }
+
+            if($request->hasFile('image')){
+                if($comment->image){
+                    Storage::disk('public')->delete($comment->image);
+                }
+
+                $path = $request->file('image')->store($basePath.'/images','public');
+                $data['image'] = $path;
+            }
+
+            if($request->hasFile('file')){
+                if($comment->file){
+                    Storage::disk('public')->delete($comment->file);
+                }
+
+                $path = $request->file('file')->store($basePath.'/files','public');
+                $data['file'] = $path;
+            }
+
+            $comment->update($data);
             $comment->load('user:id,name,username,profile_photo');
             return ResponseHelper::success($comment->fresh(), 'Comment Updated Successfully', 200);
         } catch (\Throwable $th) {
@@ -87,7 +121,7 @@ class CommentController extends Controller
         try {
         $comments = $post->comments()
         ->with('user:id,name,username,profile_photo')
-        ->latest()
+        ->oldest()
         ->paginate(10);
 
         return ResponseHelper::success($comments, 'Comment List', 200);
@@ -101,6 +135,14 @@ class CommentController extends Controller
         try {
             if(Auth::user()->cannot('delete', $comment)){
                 return ResponseHelper::error('Unauthorized', 'You are not authorized to delete this comment', 403);
+            }
+
+            if($comment->image){
+                Storage::disk('public')->delete($comment->image);
+            }
+
+            if($comment->file){
+                Storage::disk('public')->delete($comment->file);
             }
 
             $comment->delete();

@@ -14,6 +14,18 @@ class Comment extends Model
         'file',
     ];
 
+    protected $appends = ['image_url', 'file_url'];
+
+    public function getImageUrlAttribute()
+    {
+        return $this->image ? asset('storage/' . $this->image) : null;
+    }
+
+    public function getFileUrlAttribute()
+    {
+        return $this->file ? asset('storage/' . $this->file) : null;
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id', 'id');

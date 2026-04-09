@@ -37,7 +37,7 @@ Route::post('login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->group(function(){
     Route::post('logout', [AuthController::class, 'logout']);
     Route::apiResource('users', UserController::class);
-    Route::apiResource('posts', PostController::class); //->except('index', 'show');
+    Route::apiResource('posts', PostController::class);
     Route::post('posts/{post}/likes', [LikeController::class, 'toggleLike']);
     Route::post('posts/{post}/comments', [CommentController::class, 'store']);
     Route::get('posts/{post}/comments', [CommentController::class, 'indexByPost']);
