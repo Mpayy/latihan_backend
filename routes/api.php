@@ -48,5 +48,6 @@ Route::middleware('auth:sanctum')->group(function(){
     Route::get('users/{user}/following', [FollowController::class, 'getFollowing']);
     Route::get('profile', [ProfileController::class, 'getProfile']);
     Route::put('profile', [ProfileController::class, 'updateProfile']);
+    Route::get('profile/posts', [ProfileController::class, 'getPosts']);
     Route::get('feeds', [FeedController::class, 'index']);
 });

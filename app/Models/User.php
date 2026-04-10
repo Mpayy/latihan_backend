@@ -29,6 +29,16 @@ class User extends Authenticatable
         'is_admin',
     ];
 
+    protected $appends = ['profile_url'];
+
+    public function getProfileUrlAttribute()
+    {
+        if ($this->profile_photo) {
+            return asset('storage/' . $this->profile_photo);
+        }
+        return null;
+    }
+
     /**
      * The attributes that should be hidden for serialization.
      *
