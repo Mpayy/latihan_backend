@@ -19,6 +19,10 @@ class UserController extends Controller
      */
     public function index()
     {
+        if(Auth::user()->cannot('viewAny', User::class)){
+            return ResponseHelper::error('You do not have access to view this data.', '', 403);
+        }
+
         $users = User::paginate(10);
 
         return ResponseHelper::success($users, 'Get User Success');

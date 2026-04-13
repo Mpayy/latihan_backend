@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\FollowController;
 use App\Http\Controllers\Api\LikeController;
 use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -36,6 +37,7 @@ Route::post('login', [AuthController::class, 'login']);
 
 Route::middleware('auth:sanctum')->group(function(){
     Route::post('logout', [AuthController::class, 'logout']);
+    Route::get('search', [SearchController::class, 'index']);
     Route::apiResource('users', UserController::class);
     Route::apiResource('posts', PostController::class);
     Route::post('posts/{post}/likes', [LikeController::class, 'toggleLike']);

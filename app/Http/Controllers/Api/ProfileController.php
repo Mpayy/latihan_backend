@@ -14,9 +14,20 @@ use App\Helpers\ResponseHelper;
 
 class ProfileController extends Controller
 {
-    public function getProfile()
+    public function getProfile(Request $request)
     {
-        $user = Auth::user()->loadCount('posts','followers','following');
+        $username = $request->query('username');
+        
+        if ($username) {
+            $user = User::where('username', $username)->firstOrFail();
+        } else {
+            $user = Auth::user();
+        }
+
+        $user->loadCount('posts','followers','following');
+        $user->loadExists(['followers as is_followed' => function($q) {
+            $q->where('follower_id', Auth::id());
+        }]);
 
         return ResponseHelper::success($user, 'Profile successfully retrieved', 200);
     }
@@ -57,14 +68,23 @@ class ProfileController extends Controller
  
         return ResponseHelper::success($user, 'Profile successfully updated', 200);
     }
-    public function getPosts()
+    public function getPosts(Request $request)
     {
+        $username = $request->query('username');
+        
+        if ($username) {
+            $targetUser = User::where('username', $username)->firstOrFail();
+            $userId = $targetUser->id;
+        } else {
+            $userId = Auth::id();
+        }
+
         $posts = Post::with('user:id,name,username,profile_photo')
             ->withCount(['likes', 'comments'])
             ->withExists(['likes as is_liked' => function($query) {
                 $query->where('likes.user_id', Auth::id());
             }])
-            ->where('user_id', Auth::id())
+            ->where('user_id', $userId)
             ->latest()
             ->paginate(10);
 
